@@ -32,9 +32,7 @@ import android.os.HandlerThread
 import android.util.Log
 import android.view.Surface
 import android.view.SurfaceView
-import io.socket.client.Socket
 import kotlinx.coroutines.suspendCancellableCoroutine
-import org.tensorflow.lite.examples.poseestimation.SocketHandler
 import org.tensorflow.lite.examples.poseestimation.VisualizationUtils
 import org.tensorflow.lite.examples.poseestimation.YuvToRgbConverter
 import org.tensorflow.lite.examples.poseestimation.data.Person
@@ -113,7 +111,7 @@ class CameraSource(
                 yuvConverter.yuvToRgb(image, imageBitmap)
                 // Create rotated version for portrait display
                 val rotateMatrix = Matrix()
-                rotateMatrix.postRotate(90.0f)
+                rotateMatrix.postRotate(-90.0f)
 
                 val rotatedBitmap = Bitmap.createBitmap(
                     imageBitmap, 0, 0, PREVIEW_WIDTH, PREVIEW_HEIGHT,
@@ -135,18 +133,7 @@ class CameraSource(
                 session?.setRepeatingRequest(it, null, null)
             }
         }
-
-
-        SocketHandler.setSocket();
-        SocketHandler.establishConnection();
-        mSocket = SocketHandler.getSocket();
-
-        mSocket!!.on("connection"){ args ->
-            Log.d("Unity","connection")
-        }
     }
-
-    var mSocket: Socket? = null;
 
     private suspend fun createSession(targets: List<Surface>): CameraCaptureSession =
         suspendCancellableCoroutine { cont ->
@@ -183,7 +170,7 @@ class CameraSource(
             // We don't use a front facing camera in this sample.
             val cameraDirection = characteristics.get(CameraCharacteristics.LENS_FACING)
             if (cameraDirection != null &&
-                cameraDirection == CameraCharacteristics.LENS_FACING_FRONT
+                cameraDirection == CameraCharacteristics.LENS_FACING_BACK
             ) {
                 continue
             }
@@ -260,7 +247,7 @@ class CameraSource(
         var classificationResult: List<Pair<String, Float>>? = null
         synchronized(lock) {
             //Bitmap.createScaledBitmap(bitmap, 320, 240, false)
-            var bitMap2 = Bitmap.createScaledBitmap(bitmap, PREVIEW_WIDTH, PREVIEW_HEIGHT, false);
+            var bitMap2 = Bitmap.createScaledBitmap(bitmap, (PREVIEW_WIDTH*0.5f).toInt(), (PREVIEW_HEIGHT*0.5f).toInt(), false);
             detector?.estimatePoses(bitMap2)?.let {
                 persons.addAll(it)
                 //Log.d("VovaTest","detector?.estimatePoses")
@@ -283,9 +270,6 @@ class CameraSource(
             listener?.onDetectedInfo(persons[0].score, classificationResult)
         }
         visualize(persons, bitmap)
-        if(mSocket!!.connected()) {
-            mSocket!!.emit("test");
-        }
     }
 
     private fun visualize(persons: List<Person>, bitmap: Bitmap) {

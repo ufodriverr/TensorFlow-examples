@@ -38,9 +38,6 @@ import kotlinx.coroutines.launch
 import org.tensorflow.lite.examples.poseestimation.camera.CameraSource
 import org.tensorflow.lite.examples.poseestimation.data.Device
 import org.tensorflow.lite.examples.poseestimation.ml.*
-import io.socket.client.IO
-import io.socket.client.Socket
-import java.net.URISyntaxException
 
 class MainActivity : AppCompatActivity() {
     companion object {
@@ -157,7 +154,6 @@ class MainActivity : AppCompatActivity() {
         if (!isCameraPermissionGranted()) {
             requestPermission()
         }
-
     }
 
     override fun onStart() {
