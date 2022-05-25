@@ -22,7 +22,6 @@ import android.app.Dialog
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Process
-import android.util.Log
 import android.view.SurfaceView
 import android.view.View
 import android.view.WindowManager
@@ -53,10 +52,10 @@ class MainActivity : AppCompatActivity() {
      * 2 == MoveNet MultiPose model
      * 3 == PoseNet model
      **/
-    private var modelPos = 0
+    private var modelPos = 1
 
     /** Default device is CPU */
-    private var device = Device.GPU
+    private var device = Device.CPU
 
     private lateinit var tvScore: TextView
     private lateinit var tvFPS: TextView
@@ -304,7 +303,6 @@ class MainActivity : AppCompatActivity() {
         val poseDetector = when (modelPos) {
             0 -> {
                 // MoveNet Lightning (SinglePose)
-                device = Device.GPU;
                 showPoseClassifier(true)
                 showDetectionScore(true)
                 showTracker(false)

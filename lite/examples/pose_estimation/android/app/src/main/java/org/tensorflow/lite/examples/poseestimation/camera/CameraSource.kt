@@ -43,7 +43,6 @@ import org.tensorflow.lite.examples.poseestimation.ml.TrackerType
 import java.util.*
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
-import kotlin.math.round
 
 class CameraSource(
     private val surfaceView: SurfaceView,
@@ -111,7 +110,7 @@ class CameraSource(
                 yuvConverter.yuvToRgb(image, imageBitmap)
                 // Create rotated version for portrait display
                 val rotateMatrix = Matrix()
-                rotateMatrix.postRotate(-90.0f)
+                rotateMatrix.postRotate(90.0f)
 
                 val rotatedBitmap = Bitmap.createBitmap(
                     imageBitmap, 0, 0, PREVIEW_WIDTH, PREVIEW_HEIGHT,
@@ -170,7 +169,7 @@ class CameraSource(
             // We don't use a front facing camera in this sample.
             val cameraDirection = characteristics.get(CameraCharacteristics.LENS_FACING)
             if (cameraDirection != null &&
-                cameraDirection == CameraCharacteristics.LENS_FACING_BACK
+                cameraDirection == CameraCharacteristics.LENS_FACING_FRONT
             ) {
                 continue
             }
@@ -242,15 +241,13 @@ class CameraSource(
 
     // process image
     private fun processImage(bitmap: Bitmap) {
-        //Log.d("VovaTest","processImage")
         val persons = mutableListOf<Person>()
         var classificationResult: List<Pair<String, Float>>? = null
+
         synchronized(lock) {
-            //Bitmap.createScaledBitmap(bitmap, 320, 240, false)
-            var bitMap2 = Bitmap.createScaledBitmap(bitmap, (PREVIEW_WIDTH*0.5f).toInt(), (PREVIEW_HEIGHT*0.5f).toInt(), false);
-            detector?.estimatePoses(bitMap2)?.let {
+            detector?.estimatePoses(bitmap)?.let {
                 persons.addAll(it)
-                //Log.d("VovaTest","detector?.estimatePoses")
+
                 // if the model only returns one item, allow running the Pose classifier.
                 if (persons.isNotEmpty()) {
                     classifier?.run {
@@ -273,6 +270,7 @@ class CameraSource(
     }
 
     private fun visualize(persons: List<Person>, bitmap: Bitmap) {
+
         val outputBitmap = VisualizationUtils.drawBodyKeypoints(
             bitmap,
             persons.filter { it.score > MIN_CONFIDENCE }, isTrackerEnabled
