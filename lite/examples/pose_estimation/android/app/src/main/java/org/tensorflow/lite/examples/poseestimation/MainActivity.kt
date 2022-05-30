@@ -17,21 +17,24 @@ limitations under the License.
 package org.tensorflow.lite.examples.poseestimation
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.app.Dialog
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Process
+import android.util.Log
 import android.view.SurfaceView
 import android.view.View
 import android.view.WindowManager
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.SwitchCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
+import io.socket.client.Socket
+import io.socket.client.Socket.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.tensorflow.lite.examples.poseestimation.camera.CameraSource
@@ -66,10 +69,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvClassificationValue1: TextView
     private lateinit var tvClassificationValue2: TextView
     private lateinit var tvClassificationValue3: TextView
-    private lateinit var swClassification: SwitchCompat
-    private lateinit var vClassificationOption: View
+    private lateinit var SocketIOConnectButton: Button
+    private lateinit var SocketIOLabel: TextView
     private var cameraSource: CameraSource? = null
     private var isClassifyPose = false
+
+    private var mSocket : Socket? = null;
+
     private val requestPermissionLauncher =
         registerForActivityResult(
             ActivityResultContracts.RequestPermission()
@@ -142,17 +148,52 @@ class MainActivity : AppCompatActivity() {
         spnTracker = findViewById(R.id.spnTracker)
         vTrackerOption = findViewById(R.id.vTrackerOption)
         surfaceView = findViewById(R.id.surfaceView)
+
+        SocketIOLabel = findViewById(R.id.socketIOLabel)
+
+        SocketIOConnectButton = findViewById(R.id.socketIOButton)
+        SocketIOConnectButton.setOnClickListener{
+            SocketHandler.setSocket();
+            mSocket = SocketHandler.getSocket();
+            mSocket!!.on(EVENT_CONNECT){
+                SetSocketIOState("Connected", "NONE");
+                Log.d("Unity", "EVENT_CONNECT");
+                LogAllDataFrom(it);
+            }
+            mSocket!!.on(EVENT_CONNECT_ERROR){
+                SetSocketIOState("Disconnected", "NONE");
+                Log.d("Unity","EVENT_CONNECT_ERROR");
+                LogAllDataFrom(it);
+            }
+            mSocket!!.on(EVENT_DISCONNECT){
+                SetSocketIOState("Disconnected", "NONE");
+                Log.d("Unity","EVENT_DISCONNECT:");
+                LogAllDataFrom(it);
+            }
+
+            SocketHandler.establishConnection();
+            SetSocketIOState("Connecting", "NONE");
+        }
+
         tvClassificationValue1 = findViewById(R.id.tvClassificationValue1)
         tvClassificationValue2 = findViewById(R.id.tvClassificationValue2)
         tvClassificationValue3 = findViewById(R.id.tvClassificationValue3)
-        swClassification = findViewById(R.id.swPoseClassification)
-        vClassificationOption = findViewById(R.id.vClassificationOption)
         initSpinner()
         spnModel.setSelection(modelPos)
-        swClassification.setOnCheckedChangeListener(setClassificationListener)
         if (!isCameraPermissionGranted()) {
             requestPermission()
         }
+
+    }
+
+    fun LogAllDataFrom(data : Array<Any?>){
+        for (value in data){
+            if(value!= null) Log.d("Unity", ""+value);
+        }
+    }
+
+    fun SetSocketIOState(state:String , roomID:String ){
+        SocketIOLabel.text = state+" "+roomID;
     }
 
     override fun onStart() {
@@ -172,6 +213,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     // check if permission is granted or not.
+    @SuppressLint("WrongConstant")
     private fun isCameraPermissionGranted(): Boolean {
         return checkPermission(
             Manifest.permission.CAMERA,
@@ -350,10 +392,7 @@ class MainActivity : AppCompatActivity() {
 
     // Show/hide the pose classification option.
     private fun showPoseClassifier(isVisible: Boolean) {
-        vClassificationOption.visibility = if (isVisible) View.VISIBLE else View.GONE
-        if (!isVisible) {
-            swClassification.isChecked = false
-        }
+
     }
 
     // Show/hide the detection score.
