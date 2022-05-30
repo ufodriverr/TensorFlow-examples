@@ -58,7 +58,7 @@ class CameraSource(
         private const val TAG = "Camera Source"
     }
 
-    public var RecognizedPersonsData: MutableList<Person>? = null;
+    var RecognizedPersonsData: MutableList<Person>? = null
 
     private val lock = Any()
     private var detector: PoseDetector? = null
@@ -268,7 +268,7 @@ class CameraSource(
         if (persons.isNotEmpty()) {
             listener?.onDetectedInfo(persons[0].score, classificationResult)
         }
-        RecognizedPersonsData = persons;
+        RecognizedPersonsData = persons
         visualize(persons, bitmap)
     }
 

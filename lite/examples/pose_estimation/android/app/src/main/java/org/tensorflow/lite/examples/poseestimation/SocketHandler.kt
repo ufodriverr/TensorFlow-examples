@@ -22,7 +22,7 @@ object SocketHandler {
                     "token" to "!23#kk32!j43h%1",
                     "name" to "VI-GalaxyS7",
                     "type" to "sensor",
-                    "pin" to "1206"
+                    "pin" to ""
                 )
             )
             mSocket = IO.socket("http://192.168.77.134:3000", builder.build())

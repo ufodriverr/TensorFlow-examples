@@ -40,6 +40,7 @@ import kotlinx.coroutines.launch
 import org.tensorflow.lite.examples.poseestimation.camera.CameraSource
 import org.tensorflow.lite.examples.poseestimation.data.Device
 import org.tensorflow.lite.examples.poseestimation.ml.*
+import java.net.URISyntaxException
 
 class MainActivity : AppCompatActivity() {
     companion object {
@@ -153,8 +154,10 @@ class MainActivity : AppCompatActivity() {
 
         SocketIOConnectButton = findViewById(R.id.socketIOButton)
         SocketIOConnectButton.setOnClickListener{
-            SocketHandler.setSocket();
-            mSocket = SocketHandler.getSocket();
+            if(mSocket == null) {
+                SocketHandler.setSocket();
+                mSocket = SocketHandler.getSocket();
+            }
             mSocket!!.on(EVENT_CONNECT){
                 SetSocketIOState("Connected", "NONE");
                 Log.d("Unity", "EVENT_CONNECT");
@@ -170,9 +173,20 @@ class MainActivity : AppCompatActivity() {
                 Log.d("Unity","EVENT_DISCONNECT:");
                 LogAllDataFrom(it);
             }
+            mSocket!!.on("assign-pin"){
+                try{
+                    SetSocketIOState("Connected", it[0] as String);
+                    Log.d("Unity","assign-pin:");
+                } catch (e : URISyntaxException){
+                    Log.d("Unity", e.toString())
+                }
+                //LogAllDataFrom(it);
+            }
 
-            SocketHandler.establishConnection();
-            SetSocketIOState("Connecting", "NONE");
+            if(mSocket != null && !mSocket!!.connected()) {
+                SocketHandler.establishConnection();
+                SetSocketIOState("Connecting", "NONE");
+            }
         }
 
         tvClassificationValue1 = findViewById(R.id.tvClassificationValue1)
@@ -187,13 +201,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun LogAllDataFrom(data : Array<Any?>){
-        for (value in data){
-            if(value!= null) Log.d("Unity", ""+value);
+        var x = 0;
+        while(x<data.size){
+            Log.d("Unity", "data[${x}]:${data[x]}");
+            x++;
         }
     }
 
     fun SetSocketIOState(state:String , roomID:String ){
-        SocketIOLabel.text = state+" "+roomID;
+        SocketIOLabel.text = state+", PIN:"+roomID;
     }
 
     override fun onStart() {
@@ -397,7 +413,7 @@ class MainActivity : AppCompatActivity() {
 
     // Show/hide the detection score.
     private fun showDetectionScore(isVisible: Boolean) {
-        tvScore.visibility = if (isVisible) View.VISIBLE else View.GONE
+        //tvScore.visibility = if (isVisible) View.VISIBLE else View.GONE
     }
 
     // Show/hide classification result.
