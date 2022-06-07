@@ -33,14 +33,18 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
+import com.google.gson.Gson
 import io.socket.client.Socket
 import io.socket.client.Socket.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.tensorflow.lite.examples.poseestimation.camera.CameraSource
 import org.tensorflow.lite.examples.poseestimation.data.Device
+import org.tensorflow.lite.examples.poseestimation.data.PointDataToSend
 import org.tensorflow.lite.examples.poseestimation.ml.*
 import java.net.URISyntaxException
+import java.util.*
+import kotlin.concurrent.schedule
 
 class MainActivity : AppCompatActivity() {
     companion object {
@@ -76,6 +80,8 @@ class MainActivity : AppCompatActivity() {
     private var isClassifyPose = false
 
     private var mSocket : Socket? = null;
+    private var receivedPin : String = "";
+    private var dataSendLoop: TimerTask? = null;
 
     private val requestPermissionLauncher =
         registerForActivityResult(
@@ -109,6 +115,8 @@ class MainActivity : AppCompatActivity() {
             changeModel(position)
         }
     }
+
+
 
     private var changeDeviceListener = object : AdapterView.OnItemSelectedListener {
         override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
@@ -162,23 +170,28 @@ class MainActivity : AppCompatActivity() {
                 SetSocketIOState("Connected", "NONE");
                 Log.d("Unity", "EVENT_CONNECT");
                 LogAllDataFrom(it);
+                receivedPin = "";
             }
             mSocket!!.on(EVENT_CONNECT_ERROR){
                 SetSocketIOState("Disconnected", "NONE");
                 Log.d("Unity","EVENT_CONNECT_ERROR");
                 LogAllDataFrom(it);
+                receivedPin = "";
             }
             mSocket!!.on(EVENT_DISCONNECT){
                 SetSocketIOState("Disconnected", "NONE");
                 Log.d("Unity","EVENT_DISCONNECT:");
                 LogAllDataFrom(it);
+                receivedPin = "";
             }
             mSocket!!.on("assign-pin"){
                 try{
-                    SetSocketIOState("Connected", it[0] as String);
-                    Log.d("Unity","assign-pin:");
+                    receivedPin = it[0] as String;
+                    SetSocketIOState("Connected", receivedPin);
+                    Log.d("Unity","assign-pin:${receivedPin}");
                 } catch (e : URISyntaxException){
-                    Log.d("Unity", e.toString())
+                    Log.d("Unity", e.toString());
+                    receivedPin = "";
                 }
                 //LogAllDataFrom(it);
             }
@@ -240,6 +253,37 @@ class MainActivity : AppCompatActivity() {
 
     // open camera
     private fun openCamera() {
+        Log.d("Unity", "openCamera");
+        if(dataSendLoop!=null){
+            dataSendLoop!!.cancel();
+            dataSendLoop = null;
+        }
+        dataSendLoop = Timer().schedule(33) {
+            if(mSocket != null &&
+                mSocket!!.connected() &&
+                receivedPin.isNotBlank()
+            ){
+                if(cameraSource?.RecognizedPersonsData != null &&
+                    cameraSource?.RecognizedPersonsData!!.count() > 0 &&
+                    cameraSource?.RecognizedPersonsData!![0].keyPoints != null &&
+                    cameraSource?.RecognizedPersonsData!![0].keyPoints.count() > 0) {
+
+                        var coords : List<PointDataToSend> = mutableListOf();
+
+                        for (point in cameraSource?.RecognizedPersonsData!![0].keyPoints){
+                            coords += PointDataToSend(point.bodyPart.position,point.coordinate.x, point.coordinate.y);
+                            //point.coordinate.x
+                        }
+                        val gson = Gson();
+                        val coordsToJson = gson.toJson(coords);
+                        //Log.d("Unity", "Send data. $coordsToJson");
+                        mSocket!!.emit("full-body",coordsToJson);
+                }
+            }
+            Timer().schedule(33) {
+                dataSendLoop!!.run();
+            }
+        }
         if (isCameraPermissionGranted()) {
             if (cameraSource == null) {
                 cameraSource =
