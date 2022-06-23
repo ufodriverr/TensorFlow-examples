@@ -3,6 +3,8 @@ import android.util.Log
 import io.socket.client.IO
 import io.socket.client.Socket
 import io.socket.client.SocketOptionBuilder
+import io.socket.engineio.client.transports.WebSocket
+import java.net.URI
 import java.net.URISyntaxException
 
 object SocketHandler {
@@ -25,7 +27,9 @@ object SocketHandler {
                     "pin" to ""
                 )
             )
-            mSocket = IO.socket("http://192.168.77.134:3000", builder.build())
+            builder.setReconnection(false);
+            builder.setTransports(arrayOf(WebSocket.NAME));
+            mSocket = IO.socket(URI.create("http://localhost:3000"), builder.build())
         } catch (e: URISyntaxException) {
             Log.d("Unity", e.toString())
         }
