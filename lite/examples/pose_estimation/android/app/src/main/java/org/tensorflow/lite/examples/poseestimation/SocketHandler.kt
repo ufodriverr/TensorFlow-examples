@@ -25,7 +25,8 @@ object SocketHandler {
                     "pin" to ""
                 )
             )
-            mSocket = IO.socket("http://192.168.77.134:3000", builder.build())
+            builder.setReconnection(false);
+            mSocket = IO.socket("http://192.168.77.135:3000", builder.build())
         } catch (e: URISyntaxException) {
             Log.d("Unity", e.toString())
         }
