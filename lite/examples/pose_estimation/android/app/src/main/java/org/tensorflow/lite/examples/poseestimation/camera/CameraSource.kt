@@ -49,7 +49,7 @@ class CameraSource(
     private val listener: CameraSourceListener? = null
 ) {
 
-    private var UseFrontCamera = false;
+    private var UseFrontCamera = true;
 
     companion object {
         private const val PREVIEW_WIDTH = 640

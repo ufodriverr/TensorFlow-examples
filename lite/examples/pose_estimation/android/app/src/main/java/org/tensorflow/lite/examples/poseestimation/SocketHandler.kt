@@ -3,6 +3,8 @@ import android.util.Log
 import io.socket.client.IO
 import io.socket.client.Socket
 import io.socket.client.SocketOptionBuilder
+import io.socket.engineio.client.transports.WebSocket
+import java.net.SocketOption
 import java.net.URISyntaxException
 
 object SocketHandler {
@@ -20,15 +22,17 @@ object SocketHandler {
             builder.setAuth(
                 mapOf(
                     "token" to "!23#kk32!j43h%1",
-                    "name" to "VI-GalaxyS7",
+                    "name" to "GalaxyS21",
                     "type" to "sensor",
                     "pin" to ""
                 )
             )
             builder.setReconnection(false);
-            mSocket = IO.socket("http://192.168.77.135:3000", builder.build())
+            val build = builder.build();
+            mSocket = IO.socket("http://192.168.77.135:3000", build)
+
         } catch (e: URISyntaxException) {
-            Log.d("Unity", e.toString())
+            Log.d("Unity init", e.toString())
         }
     }
 

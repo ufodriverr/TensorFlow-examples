@@ -162,40 +162,39 @@ class MainActivity : AppCompatActivity() {
 
         SocketIOConnectButton = findViewById(R.id.socketIOButton)
         SocketIOConnectButton.setOnClickListener{
+            SocketHandler.setSocket();
             if(mSocket == null) {
-                SocketHandler.setSocket();
                 mSocket = SocketHandler.getSocket();
-            }
-            mSocket!!.on(EVENT_CONNECT){
-                SetSocketIOState("Connected", "NONE");
-                Log.d("Unity", "EVENT_CONNECT");
-                LogAllDataFrom(it);
-                receivedPin = "";
-            }
-            mSocket!!.on(EVENT_CONNECT_ERROR){
-                SetSocketIOState("Disconnected", "NONE");
-                Log.d("Unity","EVENT_CONNECT_ERROR");
-                LogAllDataFrom(it);
-                receivedPin = "";
-            }
-            mSocket!!.on(EVENT_DISCONNECT){
-                SetSocketIOState("Disconnected", "NONE");
-                Log.d("Unity","EVENT_DISCONNECT:");
-                LogAllDataFrom(it);
-                receivedPin = "";
-            }
-            mSocket!!.on("assign-pin"){
-                try{
-                    receivedPin = it[0] as String;
-                    SetSocketIOState("Connected", receivedPin);
-                    Log.d("Unity","assign-pin:${receivedPin}");
-                } catch (e : URISyntaxException){
-                    Log.d("Unity", e.toString());
+                mSocket!!.on(EVENT_CONNECT){
+                    SetSocketIOState("Connected", "NONE");
+                    Log.d("Unity", "EVENT_CONNECT");
+                    LogAllDataFrom(it);
                     receivedPin = "";
                 }
-                //LogAllDataFrom(it);
+                mSocket!!.on(EVENT_CONNECT_ERROR){
+                    SetSocketIOState("Disconnected", "NONE");
+                    Log.d("Unity","EVENT_CONNECT_ERROR");
+                    LogAllDataFrom(it);
+                    receivedPin = "";
+                }
+                mSocket!!.on(EVENT_DISCONNECT){
+                    SetSocketIOState("Disconnected", "NONE");
+                    Log.d("Unity","EVENT_DISCONNECT:");
+                    LogAllDataFrom(it);
+                    receivedPin = "";
+                }
+                mSocket!!.on("assign-pin"){
+                    try{
+                        receivedPin = it[0] as String;
+                        SetSocketIOState("Connected", receivedPin);
+                        Log.d("Unity","assign-pin:${receivedPin}");
+                    } catch (e : URISyntaxException){
+                        Log.d("Unity", e.toString());
+                        receivedPin = "";
+                    }
+                    //LogAllDataFrom(it);
+                }
             }
-
             if(mSocket != null && !mSocket!!.connected()) {
                 SocketHandler.establishConnection();
                 SetSocketIOState("Connecting", "NONE");
